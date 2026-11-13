@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_self">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    html, body {
+      font-family: 'Sarabun', sans-serif;
+      background-color: #f1f5f9;
+      padding: 10px;
+      -webkit-text-size-adjust: 100%;
+      touch-action: manipulation;
+      -webkit-overflow-scrolling: touch;
+    }
+    .card { border-radius: 12px; border: none; box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-bottom: 12px; padding: 16px; background: #fff; }
+    .header-box { background: linear-gradient(135deg, #fff3e6, #ffe0cc); border-radius: 12px; padding: 16px; text-align: center; margin-bottom: 15px; }
+    .section-title { font-weight: 600; color: #1e3a8a; margin-bottom: 12px; font-size: 1.05rem; }
+    .form-label { font-weight: 600; color: #374151; font-size: 0.95rem; margin-bottom: 6px; display: block; }
+    input.form-control { height: 48px !important; font-size: 16px !important; }
+    .info-span { background-color: #f8fafc; padding: 8px 12px; border-radius: 6px; display: block; word-break: break-all; min-height: 38px; border: 1px solid #e2e8f0; }
+
+    /* ===== CUSTOM DROPDOWN ===== */
+    .custom-select-wrapper { position: relative; user-select: none; -webkit-user-select: none; }
+    .custom-select-trigger {
+      display: flex; align-items: center; justify-content: space-between;
+      height: 52px; padding: 0 14px;
+      background: #fff; border: 1px solid #dee2e6; border-radius: 8px;
+      font-size: 16px; color: #374151; cursor: pointer;
+      -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+    }
+    .custom-select-trigger.placeholder { color: #9ca3af; }
+    .custom-select-trigger .arrow {
+      border: solid #6b7280; border-width: 0 2px 2px 0;
+      display: inline-block; padding: 4px;
+      transform: rotate(45deg); transition: transform 0.2s;
+      flex-shrink: 0; margin-left: 8px;
+    }
+    .custom-select-trigger.open .arrow { transform: rotate(-135deg); }
+    .custom-options {
+      display: none; position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+      background: #fff; border: 1px solid #dee2e6; border-radius: 8px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.15); z-index: 9999;
+      max-height: 260px; overflow-y: auto; -webkit-overflow-scrolling: touch;
+    }
+    .custom-options.open { display: block; }
+    .custom-option {
+      padding: 13px 14px; font-size: 15px; color: #374151; cursor: pointer;
+      border-bottom: 1px solid #f1f5f9;
+      -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+    }
+    .custom-option:last-child { border-bottom: none; }
+    .custom-option:active, .custom-option.selected { background-color: #fff7ed; color: #c2410c; font-weight: 600; }
+
+    /* ===== DATE FIELD TRIGGER ===== */
+    .date-field {
+      display: flex; align-items: center; gap: 10px;
+      height: 52px; padding: 0 14px;
+      background: #fff; border: 1px solid #dee2e6; border-radius: 8px;
+      cursor: pointer; -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation; user-select: none;
+    }
+    .date-field .cal-icon { font-size: 20px; flex-shrink: 0; }
+    .date-field .date-text { flex: 1; font-size: 15px; color: #9ca3af; }
+    .date-field .date-text.filled { color: #1e293b; font-weight: 600; }
+    .date-field:active { background: #f8fafc; }
+
+    /* ===== CALENDAR MODAL ===== */
+    #calOverlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.45); z-index: 10000;
+      align-items: flex-end; justify-content: center;
+    }
+    #calOverlay.show { display: flex; }
+
+    #calModal {
+      background: #fff; border-radius: 20px 20px 0 0;
+      width: 100%; max-width: 480px;
+      padding: 0 0 24px;
+      box-shadow: 0 -4px 30px rgba(0,0,0,0.18);
+      animation: slideUp 0.25s ease;
+    }
+    @keyframes slideUp {
+      from { transform: translateY(100%); }
+      to   { transform: translateY(0); }
+    }
+
+    /* Calendar Header */
+    .cal-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 20px 10px;
+      border-bottom: 1px solid #f1f5f9;
+    }
+    .cal-title { font-size: 17px; font-weight: 700; color: #1e293b; }
+    .cal-nav {
+      width: 38px; height: 38px; border-radius: 50%;
+      background: #f1f5f9; border: none;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation; font-size: 18px; color: #374151;
+    }
+    .cal-nav:disabled { opacity: 0.3; cursor: default; }
+
+    /* Weekday row */
+    .cal-weekdays {
+      display: grid; grid-template-columns: repeat(7, 1fr);
+      padding: 8px 12px 4px;
+    }
+    .cal-wd {
+      text-align: center; font-size: 13px; font-weight: 600;
+      padding: 4px 0;
+    }
+    .cal-wd.sun { color: #ef4444; }
+    .cal-wd.sat { color: #3b82f6; }
+
+    /* Day grid */
+    .cal-grid {
+      display: grid; grid-template-columns: repeat(7, 1fr);
+      padding: 0 12px 8px; gap: 2px;
+    }
+    .cal-day {
+      aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
+      border-radius: 50%; font-size: 15px; color: #374151;
+      cursor: pointer; -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation; border: none; background: none;
+    }
+    .cal-day.empty { cursor: default; }
+    .cal-day.past  { color: #d1d5db; cursor: default; pointer-events: none; }
+    .cal-day.today { background: #fef3c7; color: #92400e; font-weight: 700; }
+    .cal-day.selected { background: #f59e0b; color: #fff !important; font-weight: 700; }
+    .cal-day.sun-col { color: #ef4444; }
+    .cal-day.sat-col { color: #3b82f6; }
+    .cal-day.past.sun-col, .cal-day.past.sat-col { color: #d1d5db; }
+
+    /* Cal footer */
+    .cal-footer { padding: 8px 20px 0; }
+    .btn-cal-cancel {
+      width: 100%; height: 46px; border-radius: 10px;
+      background: #f1f5f9; border: none;
+      font-family: 'Sarabun', sans-serif; font-size: 15px;
+      color: #64748b; font-weight: 600; cursor: pointer;
+    }
+
+    /* Overlay for dropdowns */
+    #ddOverlay {
+      display: none; position: fixed; inset: 0; z-index: 9998;
+    }
+    #ddOverlay.on { display: block; }
+
+    .footer-links a { color: #94a3b8; text-decoration: none; }
+    .footer-links a:active { color: #64748b; }
+  </style>
+</head>
+<body>
+
+<!-- Dropdown overlay -->
+<div id="ddOverlay"></div>
+
+<!-- Calendar Modal -->
+<div id="calOverlay">
+  <div id="calModal">
+    <div class="cal-header">
+      <button class="cal-nav" id="btnPrev">&#8249;</button>
+      <div class="cal-title" id="calTitle"></div>
+      <button class="cal-nav" id="btnNext">&#8250;</button>
+    </div>
+    <div class="cal-weekdays">
+      <div class="cal-wd sun">อา</div>
+      <div class="cal-wd">จ</div>
+      <div class="cal-wd">อ</div>
+      <div class="cal-wd">พ</div>
+      <div class="cal-wd">พฤ</div>
+      <div class="cal-wd">ศ</div>
+      <div class="cal-wd sat">ส</div>
+    </div>
+    <div class="cal-grid" id="calGrid"></div>
+    <div class="cal-footer">
+      <button class="btn-cal-cancel" onclick="closeCalendar()">ยกเลิก</button>
+    </div>
+  </div>
+</div>
+
+<!-- Page -->
+<div class="container-fluid" style="max-width: 480px; padding: 0;">
+  <div class="header-box">
+    <h5 class="m-0 text-dark fw-bold">📋 ระบบแจ้งลาและมอบหมายงาน</h5>
+    <small class="text-secondary fw-bold">สถาบันการแพทย์จักรีนฤบดินทร์</small>
+  </div>
+
+  <!-- Section 1 -->
+  <div class="card">
+    <div class="section-title">🔸 1. ข้อมูลผู้ขอลา</div>
+    <div class="mb-3">
+      <label class="form-label">เลือกชื่อ-นามสกุล</label>
+      <div class="custom-select-wrapper">
+        <div class="custom-select-trigger placeholder" id="trig_userName">
+          <span id="trig_userName_text">-- คลิกเพื่อเลือกชื่อผู้ลา --</span><i class="arrow"></i>
+        </div>
+        <div class="custom-options" id="opts_userName"></div>
+      </div>
+      <input type="hidden" id="userName">
+    </div>
+    <div class="mb-2"><small class="text-muted d-block mb-1">🏢 หน่วยงาน:</small><div id="lblUnit" class="info-span fw-bold">-</div></div>
+    <div><small class="text-muted d-block mb-1">💼 ตำแหน่ง:</small><div id="lblPos" class="info-span fw-bold">-</div></div>
+    <input type="hidden" id="userUnit">
+    <input type="hidden" id="userPos">
+  </div>
+
+  <!-- Section 2 -->
+  <div class="card">
+    <div class="section-title">🔹 2. รายละเอียดการลา</div>
+    <div class="mb-3">
+      <label class="form-label">ประเภทการลา</label>
+      <div class="custom-select-wrapper">
+        <div class="custom-select-trigger placeholder" id="trig_leaveType">
+          <span id="trig_leaveType_text">-- เลือกประเภทการลา --</span><i class="arrow"></i>
+        </div>
+        <div class="custom-options" id="opts_leaveType"></div>
+      </div>
+      <input type="hidden" id="leaveType">
+    </div>
+    <div class="mb-3">
+      <label class="form-label">ช่วงเวลาลา</label>
+      <div class="custom-select-wrapper">
+        <div class="custom-select-trigger" id="trig_leaveDuration">
+          <span id="trig_leaveDuration_text">เต็มวัน</span><i class="arrow"></i>
+        </div>
+        <div class="custom-options" id="opts_leaveDuration">
+          <div class="custom-option selected" data-value="เต็มวัน">เต็มวัน</div>
+          <div class="custom-option" data-value="ช่วงเช้า">ช่วงเช้า</div>
+          <div class="custom-option" data-value="ช่วงบ่าย">ช่วงบ่าย</div>
+        </div>
+      </div>
+      <input type="hidden" id="leaveDuration" value="เต็มวัน">
+    </div>
+    <div class="mb-3">
+      <label class="form-label">หมายเหตุเพิ่มเติม</label>
+      <input type="text" class="form-control" id="reason" placeholder="ระบุเหตุผล (ถ้ามี)">
+    </div>
+
+    <!-- Date fields -->
+    <div class="row g-2">
+      <div class="col-6">
+        <label class="form-label">ตั้งแต่วันที่</label>
+        <div class="date-field" onclick="openCalendar('start')">
+          <span class="cal-icon">📅</span>
+          <span class="date-text" id="startDateDisplay">เลือกวันที่</span>
+        </div>
+        <input type="hidden" id="startDate">
+      </div>
+      <div class="col-6">
+        <label class="form-label">ถึงวันที่</label>
+        <div class="date-field" onclick="openCalendar('end')">
+          <span class="cal-icon">📅</span>
+          <span class="date-text" id="endDateDisplay">เลือกวันที่</span>
+        </div>
+        <input type="hidden" id="endDate">
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 3 -->
+  <div class="card">
+    <div class="section-title">📞 3. ผู้รับมอบหมายงานแทน</div>
+    <div class="mb-3">
+      <label class="form-label">เลือกชื่อผู้รับงานแทน</label>
+      <div class="custom-select-wrapper">
+        <div class="custom-select-trigger placeholder" id="trig_delegateName">
+          <span id="trig_delegateName_text">-- เลือกผู้ประสานงานแทน --</span><i class="arrow"></i>
+        </div>
+        <div class="custom-options" id="opts_delegateName"></div>
+      </div>
+      <input type="hidden" id="delegateName">
+    </div>
+    <div class="mb-2"><small class="text-muted d-block mb-1">🏢 หน่วยงานผู้แทน:</small><div id="lblDelUnit" class="info-span fw-bold">-</div></div>
+    <div><small class="text-muted d-block mb-1">📱 เบอร์โทรศัพท์:</small><div id="lblDelPhone" class="info-span fw-bold">-</div></div>
+    <input type="hidden" id="delegateUnit">
+    <input type="hidden" id="delegatePhone">
+  </div>
+
+  <button type="button" class="btn btn-warning btn-lg w-100 fw-bold text-dark mb-3"
+    id="btnSubmit" style="height: 52px;" onclick="handleSubmit()">
+    บันทึกข้อมูลและส่งแจ้งเตือน 🚀
+  </button>
+
+  <div class="text-center footer-links mb-5">
+    <a href="<?!= baseUrl ?>?page=admin" target="_top">🔐 สำหรับผู้ดูแลระบบ</a>
+    &nbsp;|&nbsp;
+    <a href="<?!= baseUrl ?>?page=dashboard" target="_top">📊 แดชบอร์ดผู้บริหาร</a>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// ข้อมูลพนักงาน / ประเภทการลา (มาจากชีท ผ่านแอดมินได้)
+// ============================================================
+const staffList  = <?!= staffJsonData ?>;
+const leaveTypes = <?!= leaveTypesJsonData ?>;
+
+// ============================================================
+// Thai locale
+// ============================================================
+const TH_MONTHS = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน',
+                   'กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+const TH_SHORT  = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.',
+                   'ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+
+function toThaiDate(ce_year, month, day) {
+  return day + ' ' + TH_MONTHS[month - 1] + ' ' + (ce_year + 543);
+}
+
+// ============================================================
+// Dropdown Engine
+// ============================================================
+let activeDD = null;
+
+function closeDDs() {
+  if (activeDD) {
+    document.getElementById('trig_' + activeDD)?.classList.remove('open');
+    document.getElementById('opts_' + activeDD)?.classList.remove('open');
+    activeDD = null;
+  }
+  document.getElementById('ddOverlay').classList.remove('on');
+}
+document.getElementById('ddOverlay').addEventListener('click', closeDDs);
+
+function initDD(id) {
+  const trig = document.getElementById('trig_' + id);
+  const opts = document.getElementById('opts_' + id);
+  trig.addEventListener('click', function(e) {
+    e.stopPropagation();
+    const wasOpen = opts.classList.contains('open');
+    closeDDs();
+    if (!wasOpen) {
+      trig.classList.add('open'); opts.classList.add('open');
+      activeDD = id;
+      document.getElementById('ddOverlay').classList.add('on');
+      setTimeout(() => trig.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 80);
+    }
+  });
+}
+
+function setupStatic(id, hiddenId) {
+  initDD(id);
+  document.getElementById('opts_' + id).querySelectorAll('.custom-option').forEach(opt => {
+    opt.addEventListener('click', function(e) {
+      e.stopPropagation();
+      document.getElementById('opts_' + id).querySelectorAll('.custom-option').forEach(o => o.classList.remove('selected'));
+      this.classList.add('selected');
+      const val = this.getAttribute('data-value');
+      document.getElementById(hiddenId).value = val;
+      document.getElementById('trig_' + id + '_text').textContent = val;
+      document.getElementById('trig_' + id).classList.remove('placeholder');
+      closeDDs();
+    });
+  });
+}
+
+function buildStaffDD(id, hiddenId, cb) {
+  initDD(id);
+  const opts = document.getElementById('opts_' + id);
+  staffList.forEach(staff => {
+    const div = document.createElement('div');
+    div.className = 'custom-option';
+    div.textContent = staff.name;
+    div.addEventListener('click', function(e) {
+      e.stopPropagation();
+      opts.querySelectorAll('.custom-option').forEach(o => o.classList.remove('selected'));
+      this.classList.add('selected');
+      document.getElementById(hiddenId).value = staff.name;
+      document.getElementById('trig_' + id + '_text').textContent = staff.name;
+      document.getElementById('trig_' + id).classList.remove('placeholder');
+      closeDDs();
+      if (cb) cb(staff);
+    });
+    opts.appendChild(div);
+  });
+}
+
+// ประเภทการลา - ดึงจากชีท (แก้ไข/เพิ่มได้จากหน้าแอดมิน)
+function buildLeaveTypeDD(id, hiddenId, list) {
+  initDD(id);
+  const opts = document.getElementById('opts_' + id);
+  opts.innerHTML = '';
+  list.forEach((val, idx) => {
+    const div = document.createElement('div');
+    div.className = 'custom-option' + (idx === 0 ? ' selected' : '');
+    div.setAttribute('data-value', val);
+    div.textContent = val;
+    div.addEventListener('click', function(e) {
+      e.stopPropagation();
+      opts.querySelectorAll('.custom-option').forEach(o => o.classList.remove('selected'));
+      this.classList.add('selected');
+      document.getElementById(hiddenId).value = val;
+      document.getElementById('trig_' + id + '_text').textContent = val;
+      document.getElementById('trig_' + id).classList.remove('placeholder');
+      closeDDs();
+    });
+    opts.appendChild(div);
+  });
+  if (list.length > 0) {
+    document.getElementById(hiddenId).value = list[0];
+    document.getElementById('trig_' + id + '_text').textContent = list[0];
+    document.getElementById('trig_' + id).classList.remove('placeholder');
+  }
+}
+
+// ============================================================
+// Calendar Engine
+// ============================================================
+const today = new Date();
+today.setHours(0, 0, 0, 0);
+
+let calTarget  = null;   // 'start' | 'end'
+let calYear    = today.getFullYear();
+let calMonth   = today.getMonth();   // 0-based
+let calMinDate = today;              // cannot pick before this
+
+function openCalendar(target) {
+  closeDDs();
+  calTarget = target;
+
+  // ถ้า start ถูกเลือกแล้ว ปฏิทิน "end" ต้องไม่ย้อนหลังกว่า start
+  const startVal = document.getElementById('startDate').value;
+  if (target === 'end' && startVal) {
+    const parts = startVal.split('-');
+    const startDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+    calMinDate = startDate;
+  } else {
+    calMinDate = today;
+  }
+
+  // เปิดปฏิทินที่เดือนปัจจุบัน (หรือเดือนที่เลือกไว้แล้ว)
+  const existingVal = document.getElementById(target + 'Date').value;
+  if (existingVal) {
+    const p = existingVal.split('-');
+    calYear  = parseInt(p[0]);
+    calMonth = parseInt(p[1]) - 1;
+  } else {
+    calYear  = calMinDate.getFullYear();
+    calMonth = calMinDate.getMonth();
+  }
+
+  renderCalendar();
+  document.getElementById('calOverlay').classList.add('show');
+}
+
+function closeCalendar() {
+  document.getElementById('calOverlay').classList.remove('show');
+}
+
+// ปิดเมื่อแตะ overlay นอก modal
+document.getElementById('calOverlay').addEventListener('click', function(e) {
+  if (e.target === this) closeCalendar();
+});
+
+document.getElementById('btnPrev').addEventListener('click', function() {
+  calMonth--;
+  if (calMonth < 0) { calMonth = 11; calYear--; }
+  renderCalendar();
+});
+document.getElementById('btnNext').addEventListener('click', function() {
+  calMonth++;
+  if (calMonth > 11) { calMonth = 0; calYear++; }
+  renderCalendar();
+});
+
+function renderCalendar() {
+  // ปิดปุ่มย้อนหลัง ถ้าเดือนนี้คือเดือน min แล้ว
+  const minYear  = calMinDate.getFullYear();
+  const minMonth = calMinDate.getMonth();
+  document.getElementById('btnPrev').disabled =
+    (calYear < minYear) || (calYear === minYear && calMonth <= minMonth);
+
+  // Title: เดือน ปีพ.ศ.
+  document.getElementById('calTitle').textContent =
+    TH_MONTHS[calMonth] + '  ' + (calYear + 543);
+
+  // หาวันแรกของเดือน (0=อา, 1=จ, ...)
+  const firstDow = new Date(calYear, calMonth, 1).getDay();
+  // จำนวนวันในเดือนนี้ — ใช้ Date API คำนวณให้ถูกต้อง (ก.พ. / ปีอธิกสุรทิน)
+  const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+
+  // ค่าที่เลือกอยู่แล้ว
+  const selVal = document.getElementById(calTarget + 'Date').value;
+
+  const grid = document.getElementById('calGrid');
+  grid.innerHTML = '';
+
+  // เซลล์ว่าง
+  for (let i = 0; i < firstDow; i++) {
+    const blank = document.createElement('div');
+    blank.className = 'cal-day empty';
+    grid.appendChild(blank);
+  }
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const btn = document.createElement('div');
+    btn.className = 'cal-day';
+    btn.textContent = d;
+
+    const thisDate = new Date(calYear, calMonth, d);
+    const isoStr   = calYear + '-' + String(calMonth + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+    const dow      = thisDate.getDay(); // 0=อา, 6=ส
+
+    // สีวันอา/ส
+    if (dow === 0) btn.classList.add('sun-col');
+    if (dow === 6) btn.classList.add('sat-col');
+
+    // ย้อนหลัง
+    if (thisDate < calMinDate) {
+      btn.classList.add('past');
+    } else {
+      // วันนี้
+      if (thisDate.getTime() === today.getTime()) btn.classList.add('today');
+      // วันที่เลือก
+      if (isoStr === selVal) btn.classList.add('selected');
+
+      btn.addEventListener('click', function() {
+        selectDate(isoStr, calYear, calMonth + 1, d);
+      });
+    }
+
+    grid.appendChild(btn);
+  }
+}
+
+function selectDate(iso, year, month, day) {
+  document.getElementById(calTarget + 'Date').value = iso;
+  const label = toThaiDate(year, month, day);
+  const dispEl = document.getElementById(calTarget + 'DateDisplay');
+  dispEl.textContent = label;
+  dispEl.classList.add('filled');
+  closeCalendar();
+
+  // ถ้าเลือก startDate แล้ว endDate น้อยกว่า ให้ล้าง endDate
+  if (calTarget === 'start') {
+    const endVal = document.getElementById('endDate').value;
+    if (endVal && endVal < iso) {
+      document.getElementById('endDate').value = '';
+      document.getElementById('endDateDisplay').textContent = 'เลือกวันที่';
+      document.getElementById('endDateDisplay').classList.remove('filled');
+    }
+  }
+}
+
+// ============================================================
+// Init
+// ============================================================
+buildLeaveTypeDD('leaveType', 'leaveType', leaveTypes);
+setupStatic('leaveDuration', 'leaveDuration');
+
+buildStaffDD('userName', 'userName', function(staff) {
+  document.getElementById('lblUnit').textContent = staff.unit;
+  document.getElementById('lblPos').textContent  = staff.pos;
+  document.getElementById('userUnit').value = staff.unit;
+  document.getElementById('userPos').value  = staff.pos;
+});
+
+buildStaffDD('delegateName', 'delegateName', function(staff) {
+  document.getElementById('lblDelUnit').textContent  = staff.unit;
+  document.getElementById('lblDelPhone').textContent = staff.phone;
+  document.getElementById('delegateUnit').value  = staff.unit;
+  document.getElementById('delegatePhone').value = staff.phone;
+});
+
+// ============================================================
+// Submit
+// ============================================================
+function resetForm() {
+  ['userName','userUnit','userPos','reason','startDate','endDate',
+   'delegateName','delegateUnit','delegatePhone'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('leaveDuration').value = 'เต็มวัน';
+  document.getElementById('lblUnit').textContent    = '-';
+  document.getElementById('lblPos').textContent     = '-';
+  document.getElementById('lblDelUnit').textContent  = '-';
+  document.getElementById('lblDelPhone').textContent = '-';
+  document.getElementById('trig_userName_text').textContent    = '-- คลิกเพื่อเลือกชื่อผู้ลา --';
+  document.getElementById('trig_userName').classList.add('placeholder');
+  document.getElementById('trig_delegateName_text').textContent = '-- เลือกผู้ประสานงานแทน --';
+  document.getElementById('trig_delegateName').classList.add('placeholder');
+  document.getElementById('trig_leaveDuration_text').textContent = 'เต็มวัน';
+  if (leaveTypes.length > 0) {
+    document.getElementById('leaveType').value = leaveTypes[0];
+    document.getElementById('trig_leaveType_text').textContent = leaveTypes[0];
+  }
+  ['start','end'].forEach(p => {
+    document.getElementById(p + 'DateDisplay').textContent = 'เลือกวันที่';
+    document.getElementById(p + 'DateDisplay').classList.remove('filled');
+  });
+  document.querySelectorAll('#opts_leaveType .custom-option').forEach(o => o.classList.remove('selected'));
+  const firstType = document.querySelector('#opts_leaveType .custom-option');
+  if (firstType) firstType.classList.add('selected');
+  document.querySelectorAll('#opts_leaveDuration .custom-option').forEach(o => o.classList.remove('selected'));
+  document.querySelector('#opts_leaveDuration [data-value="เต็มวัน"]').classList.add('selected');
+}
+
+function handleSubmit() {
+  const formData = {
+    userName:      document.getElementById('userName').value,
+    userUnit:      document.getElementById('userUnit').value,
+    userPos:       document.getElementById('userPos').value,
+    leaveType:     document.getElementById('leaveType').value,
+    leaveDuration: document.getElementById('leaveDuration').value,
+    reason:        document.getElementById('reason').value,
+    startDate:     document.getElementById('startDate').value,
+    endDate:       document.getElementById('endDate').value,
+    delegateName:  document.getElementById('delegateName').value,
+    delegateUnit:  document.getElementById('delegateUnit').value,
+    delegatePhone: document.getElementById('delegatePhone').value
+  };
+
+  if (!formData.userName || !formData.delegateName || !formData.startDate || !formData.endDate) {
+    alert('กรุณากรอกข้อมูลให้ครบถ้วนทุกช่องครับ!\n\n⚠️ ตรวจสอบ:\n• ชื่อผู้ลา\n• วันที่เริ่ม-สิ้นสุด\n• ผู้รับงานแทน');
+    return;
+  }
+
+  const btn = document.getElementById('btnSubmit');
+  btn.disabled = true;
+  btn.textContent = 'กำลังบันทึกข้อมูล... ⏳';
+
+  google.script.run.withSuccessHandler(function(res) {
+    if (res.success) {
+      alert('บันทึกข้อมูลสำเร็จ และแจ้งเข้าไลน์เรียบร้อยแล้วครับ! 🙏');
+      resetForm();
+    } else {
+      alert('เกิดข้อผิดพลาด: ' + res.error);
+    }
+    btn.disabled = false;
+    btn.textContent = 'บันทึกข้อมูลและส่งแจ้งเตือน 🚀';
+  }).submitLeave(formData);
+}
+</script>
+</body>
+</html>
